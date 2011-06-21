@@ -16,8 +16,14 @@
 import os
 import sys
 
+from os.path import basename, splitext, join as pjoin
+from glob import glob
 from distutils.core import setup
-from os.path import join as pjoin
+from distutils.core import Command
+from unittest import TextTestRunner, TestLoader
+
+TEST_PATHS = ['tests']
+
 
 def read_version_string():
     version = None
@@ -27,18 +33,52 @@ def read_version_string():
     sys.path.pop(0)
     return version
 
+
+class TestCommand(Command):
+    user_options = []
+
+    def initialize_options(self):
+        THIS_DIR = os.path.abspath(os.path.split(__file__)[0])
+        sys.path.insert(0, THIS_DIR)
+        for test_path in TEST_PATHS:
+          sys.path.insert(0, pjoin(THIS_DIR, test_path))
+        self._dir = os.getcwd()
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        status = self._run_tests()
+        sys.exit(status)
+
+    def _run_tests(self):
+        testfiles = []
+        for test_path in TEST_PATHS:
+            for t in glob(pjoin(self._dir, test_path, 'test_*.py')):
+                testfiles.append('.'.join(
+                    [test_path.replace('/', '.'), splitext(basename(t))[0]]))
+
+        tests = TestLoader().loadTestsFromNames(testfiles)
+
+        t = TextTestRunner(verbosity=2)
+        res = t.run(tests)
+        return not res.wasSuccessful()
+
+
 setup(
-    name='pymetrics',
+    name='pystats',
     version=read_version_string(),
-    description='A unified interface into many cloud server providers',
+    description='A simple library for recording application-specific metrics',
     author='Rackspace',
-    author_email='dev@libcloud.apache.org',
     requires=(),
     packages=[
         'pystats',
     ],
     package_dir={
         'pystats': 'pystats',
+    },
+    cmdclass={
+        'test': TestCommand,
     },
     license='Apache License (2.0)',
     url='https://github.com/racker/python-stats',
