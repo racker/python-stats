@@ -16,19 +16,23 @@
 
 import time
 
+from functools import wraps
 from collections import defaultdict
 
 DEFAULT_TYPE = 'float'
 DEFAULT_GAUGE = 'gauge'
 
 
-def count_calls(f):
+def count_calls(counter=None):
+  def wrapper(f):
+    @wraps(f)
     def inner(*args, **kwargs):
-        self = args[0]
-        self.counter.add('func_%s' % (f.__name__))
-        d = f(*args, **kwargs)
-        return d
+      if counter:
+        counter.add('func_%s' % (f.__name__))
+      d = f(*args, **kwargs)
+      return d
     return inner
+  return wrapper
 
 
 class Health:
@@ -133,8 +137,11 @@ class Counter(object):
         if type:
             self._dt[key] = type
 
-    def bad(self):
-        self._health = Health.ERR
+    def set_health(self, health):
+      if health not in (Health.OK, Health.WARN, Health.ERR):
+        raise ValueError('Invalid health state: %s' % (health))
+
+      self._health = health
 
     @property
     def health(self):
@@ -199,8 +206,7 @@ class Counter(object):
             vs = []
             for x in args:
                 val = m_keys.get(x)
-                if val:
-                    vs.append(val)
+                vs.append(val)
 
             calc = fn(*vs, **kwargs)
             _new_metric = {
