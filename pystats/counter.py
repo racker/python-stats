@@ -24,15 +24,15 @@ DEFAULT_GAUGE = 'gauge'
 
 
 def count_calls(counter=None):
-  def wrapper(f):
-    @wraps(f)
-    def inner(*args, **kwargs):
-      if counter:
-        counter.add('func_%s' % (f.__name__))
-      d = f(*args, **kwargs)
-      return d
-    return inner
-  return wrapper
+    def wrapper(f):
+        @wraps(f)
+        def inner(*args, **kwargs):
+            if counter:
+                counter.add('func_%s' % (f.__name__))
+            d = f(*args, **kwargs)
+            return d
+        return inner
+    return wrapper
 
 
 class Health:
@@ -138,10 +138,10 @@ class Counter(object):
             self._dt[key] = type
 
     def set_health(self, health):
-      if health not in (Health.OK, Health.WARN, Health.ERR):
-        raise ValueError('Invalid health state: %s' % (health))
+        if health not in (Health.OK, Health.WARN, Health.ERR):
+            raise ValueError('Invalid health state: %s' % (health))
 
-      self._health = health
+        self._health = health
 
     @property
     def health(self):
